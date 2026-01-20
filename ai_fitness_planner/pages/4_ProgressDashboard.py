@@ -40,12 +40,24 @@ if not data:
 
 # DATAFRAME
 df = pd.DataFrame(data, columns=["Date", "Weight"])
-df["Date"] = pd.to_datetime(df["Date"])
+
+# Convert Date & Weight properly
+df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+df["Weight"] = pd.to_numeric(df["Weight"], errors="coerce")
+
+# Drop invalid rows
+df.dropna(inplace=True)
+
+# Sort by date (VERY IMPORTANT)
+df = df.sort_values("Date")
+
+# Handle multiple entries on same day (keep latest)
+df = df.groupby("Date", as_index=False).last()
 
 # ---------------------------------------
 # METRICS
-latest_weight = df.iloc[-1]["Weight"]
-start_weight = df.iloc[0]["Weight"]
+latest_weight = df["Weight"].iloc[-1]
+start_weight = df["Weight"].iloc[0]
 weight_change = round(latest_weight - start_weight, 2)
 
 # -----------------------------------
@@ -86,7 +98,10 @@ st.divider()
 # WEIGHT PROGRESS CHART
 st.subheader("📉 Weight Progress Over Time")
 
-st.line_chart(df.set_index("Date"), height=350)
+st.line_chart(
+    df.set_index("Date")["Weight"],
+    height=350
+)
 
 st.caption("📌 Progress is tracked from user submission")
 
